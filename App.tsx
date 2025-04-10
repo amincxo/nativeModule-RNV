@@ -1,130 +1,90 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, { useState } from 'react';
+import { View, Text, TextInput, Button, StyleSheet, NativeModules } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
-
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
+// تایپ برای ماژول نیتیو V2Ray
+interface V2RayModule {
+  startV2Ray(config: string, callback: (result: string) => void): void;
+  stopV2Ray(callback: (result: string) => void): void;
 }
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+const { V2RayModule } = NativeModules as { V2RayModule: V2RayModule };
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+const App: React.FC = () => {
+  const [config, setConfig] = useState<string>('');
+  const [status, setStatus] = useState<string>('اتصال برقرار نیست');
+
+  const saveConfig = async (): Promise<void> => {
+    try {
+      await AsyncStorage.setItem('v2rayConfig', config);
+    } catch (error) {
+      console.error('خطا در ذخیره کانفیگ:', error);
+    }
   };
 
-  /*
-   * To keep the template simple and small we're adding padding to prevent view
-   * from rendering under the System UI.
-   * For bigger apps the recommendation is to use `react-native-safe-area-context`:
-   * https://github.com/AppAndFlow/react-native-safe-area-context
-   *
-   * You can read more about it here:
-   * https://github.com/react-native-community/discussions-and-proposals/discussions/827
-   */
-  const safePadding = '5%';
+  const loadConfig = async (): Promise<void> => {
+    try {
+      const savedConfig = await AsyncStorage.getItem('v2rayConfig');
+      if (savedConfig) setConfig(savedConfig);
+    } catch (error) {
+      console.error('خطا در بارگذاری کانفیگ:', error);
+    }
+  };
+
+  const startV2Ray = (): void => {
+    V2RayModule.startV2Ray(config, (result: string) => {
+      setStatus(result);
+      saveConfig();
+    });
+  };
+
+  const stopV2Ray = (): void => {
+    V2RayModule.stopV2Ray((result: string) => {
+      setStatus(result);
+    });
+  };
 
   return (
-    <View style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
+    <View style={styles.container}>
+      <Text style={styles.title}>کلاینت V2Ray واقعی</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="کانفیگ VMess رو وارد کن (JSON)"
+        value={config}
+        onChangeText={setConfig}
+        multiline
       />
-      <ScrollView
-        style={backgroundStyle}>
-        <View style={{paddingRight: safePadding}}>
-          <Header/>
-        </View>
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            paddingHorizontal: safePadding,
-            paddingBottom: safePadding,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
+      <Button title="شروع V2Ray" onPress={startV2Ray} />
+      <Button title="توقف V2Ray" onPress={stopV2Ray} />
+      <Button title="بارگذاری کانفیگ" onPress={loadConfig} />
+      <Text style={styles.status}>{status}</Text>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
   },
-  sectionTitle: {
+  title: {
     fontSize: 24,
-    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 20,
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 5,
+    height: 100,
   },
-  highlight: {
-    fontWeight: '700',
+  status: {
+    marginTop: 20,
+    textAlign: 'center',
+    fontSize: 16,
   },
 });
 

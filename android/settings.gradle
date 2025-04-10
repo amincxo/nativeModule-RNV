@@ -1,6 +1,18 @@
 pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
 plugins { id("com.facebook.react.settings") }
-extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+extensions.configure(com.facebook.react.ReactSettingsExtension) { ex -> ex.autolinkLibrariesFromCommand() }
 rootProject.name = 'V2RayApp'
 include ':app'
+
+// اضافه کردن ماژول‌های نیتیو
+include ':react-native-permissions'
+project(':react-native-permissions').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-permissions/android')
+
+include ':@react-native-async-storage_async-storage'
+project(':@react-native-async-storage_async-storage').projectDir = new File(rootProject.projectDir, '../node_modules/@react-native-async-storage/async-storage/android')
+
 includeBuild('../node_modules/@react-native/gradle-plugin')
+
+// حذف خط مربوط به native_modules.gradle
+// apply from: file("../node_modules/@react-native-community/cli-platform-android/native_modules.gradle")
+// applyNativeModulesSettingsGradle(settings)
